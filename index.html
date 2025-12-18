@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inventario ProSolusy</title>
+  <link rel="icon" type="image/x-icon" href="assets/Ícone Pro Solus.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              DEFAULT: '#059669',
+              50: '#E6F0EF',
+              100: '#C2DBD8',
+              600: '#059669',
+              700: '#004C45',
+            },
+            secondary: {
+              DEFAULT: '#C0E015',
+              50: '#F9FCC8',
+              100: '#F4FA9D',
+              500: '#C0E015',
+              600: '#A6C20E',
+            },
+            accent: {
+              DEFAULT: '#F37021',
+              50: '#FEF1E9',
+              100: '#FCD8C2',
+              500: '#F37021',
+            },
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.1/",
+    "react": "https://aistudiocdn.com/react@^19.2.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.556.0",
+    "dexie": "https://aistudiocdn.com/dexie@^4.2.1",
+    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.10.1",
+    "dexie-react-hooks": "https://aistudiocdn.com/dexie-react-hooks@^4.2.0",
+    "papaparse": "https://aistudiocdn.com/papaparse@^5.5.3"
+  }
+}
+</script>
+  <link rel="stylesheet" href="/index.css">
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+
+</html>

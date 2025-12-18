@@ -1,0 +1,5 @@
+{
+  "name": "InventoryMaster Pro",
+  "description": "High-performance inventory management system featuring bulk CSV import (24k+ items), authentication, and PostgreSQL-ready architecture simulation.",
+  "requestFramePermissions": []
+}
