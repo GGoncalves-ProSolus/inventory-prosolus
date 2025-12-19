@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useCallback } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../App';
 import { LayoutDashboard, Package, Upload, LogOut, Box, CheckCircle2, AlertTriangle, FileCode, ChevronLeft, ChevronRight, Moon, Sun } from 'lucide-react';
@@ -30,23 +30,32 @@ const DashboardLayout: React.FC = () => {
   const toggleDarkMode = () => setDarkMode(!darkMode);
 
   // Busca os dados no servidor ao carregar a página
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await fetch('http://localhost:5000/inventory');
-        if (response.ok) {
-          const data = await response.json();
-          const okCount = data.filter((item: any) => item.status === 'INVENTARIADO').length;
-          const reviewCount = data.filter((item: any) => item.status === 'REVISAO').length;
-          setStats({ ok: okCount, review: reviewCount });
-        }
-      } catch (error) {
-        console.error("Ainda não consegui conectar ao backend para pegar stats:", error);
-      }
-    };
+  const fetchStats = useCallback(async () => {
+    if (!auth.user?.id) return;
 
+    try {
+      const response = await fetch(`http://localhost:5000/inventory?userId=${auth.user.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        const okCount = data.filter((item: any) => item.status === 'INVENTARIADO').length;
+        const reviewCount = data.filter((item: any) => item.status === 'REVISAO').length;
+        setStats({ ok: okCount, review: reviewCount });
+      }
+    } catch (error) {
+      console.error("Ainda não consegui conectar ao backend para pegar stats:", error);
+    }
+  }, [auth.user?.id]);
+
+  useEffect(() => {
     fetchStats();
-  }, []);
+
+    // Listener para atualizações em tempo real (disparadas pelo InventoryList)
+    window.addEventListener('inventory-updated', fetchStats);
+
+    return () => {
+      window.removeEventListener('inventory-updated', fetchStats);
+    };
+  }, [fetchStats]);
 
   const handleLogout = () => {
     logout();

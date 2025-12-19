@@ -215,5 +215,5 @@ app.delete("/inventory/:id", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`Servidor rodando na porta ${PORT} com busca Global de Catálogo! 🛡️`);
+    console.log(`Servidor rodando na porta ${PORT}`);
 });

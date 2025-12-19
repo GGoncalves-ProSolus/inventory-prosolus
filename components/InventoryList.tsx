@@ -2,6 +2,7 @@ import React, { useState, useContext, useEffect } from 'react';
 import { InventoryItem, InventoryStatus, TeamLeader } from '../src/types';
 import { AuthContext } from '../App';
 import { Search, Plus, Trash2, Edit2, AlertCircle, ChevronLeft, ChevronRight, Scale, Calculator, CheckCircle2, AlertTriangle, Users, BarChart3, Eye, Printer, Clock, PlusCircle, ScanBarcode, Loader2 } from 'lucide-react';
+import ConfirmModal from './ConfirmModal';
 
 const InventoryList: React.FC = () => {
   const { auth } = useContext(AuthContext);
@@ -10,6 +11,8 @@ const InventoryList: React.FC = () => {
   const [isAdminStatsOpen, setIsAdminStatsOpen] = useState(false);
   const [isViewMode, setIsViewMode] = useState(false);
   const [editingId, setEditingId] = useState<number | undefined>(undefined);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<number | undefined>(undefined);
 
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [leaders, setLeaders] = useState<TeamLeader[]>([]);
@@ -282,6 +285,8 @@ const InventoryList: React.FC = () => {
 
       if (response.ok) {
         await fetchItems();
+        // Notifica outros componentes (como o DashboardLayout) para atualizar os stats
+        window.dispatchEvent(new CustomEvent('inventory-updated'));
         setIsModalOpen(false);
       } else {
         alert("Erro ao salvar no servidor.");
@@ -291,11 +296,22 @@ const InventoryList: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id?: number) => {
-    if (id && window.confirm("Tem certeza que deseja excluir esta contagem?")) {
+  const handleDelete = (id?: number) => {
+    if (id) {
+      setItemToDelete(id);
+      setIsDeleteConfirmOpen(true);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (itemToDelete) {
       try {
-        await fetch(`${API_URL}/inventory/${id}`, { method: 'DELETE' });
+        await fetch(`${API_URL}/inventory/${itemToDelete}`, { method: 'DELETE' });
         await fetchItems();
+        // Notifica outros componentes
+        window.dispatchEvent(new CustomEvent('inventory-updated'));
+        setIsDeleteConfirmOpen(false);
+        setItemToDelete(undefined);
       } catch (error) {
         alert("Erro ao excluir.");
       }
@@ -309,13 +325,99 @@ const InventoryList: React.FC = () => {
       alert("Não há itens marcados para Revisão.");
       return;
     }
-    // Lógica de impressão (simplificada para o exemplo)
-    const printWindow = window.open('', '', 'height=600,width=800');
+
+    const printWindow = window.open('', '', 'height=800,width=1000');
     if (printWindow) {
-      printWindow.document.write('<html><body><h1>Itens para Revisão</h1>');
-      // ... (resto da lógica de impressão)
-      printWindow.document.write('</body></html>');
-      printWindow.print();
+      const date = new Date().toLocaleString('pt-BR');
+      const rows = revisionItems.map(item => `
+        <tr>
+          <td>${item.codigo_etiqueta || '-'}</td>
+          <td>${item.codigo}</td>
+          <td>${item.descricao}</td>
+          <td style="text-align: center;">${item.armazem}</td>
+          <td>${item.lider_equipe || '-'}</td>
+          <td class="counts-cell">${renderTableCounts(item.contagens)}</td>
+          <td class="action-cell"></td>
+        </tr>
+      `).join('');
+
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Relatório de Revisão - InventoryMaster Pro</title>
+          <style>
+            @page { size: portrait; margin: 1cm; }
+            body { font-family: sans-serif; color: #333; line-height: 1.4; margin: 0; padding: 20px; }
+            .header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #000; pb: 10px; mb: 20px; }
+            .header h1 { margin: 0; color: #000; font-size: 24px; }
+            .header .info { text-align: right; font-size: 10px; color: #666; }
+            
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 11px; }
+            th { background-color: #f3f4f6; color: #374151; font-weight: bold; text-align: left; border: 1px solid #d1d5db; padding: 8px; }
+            td { border: 1px solid #d1d5db; padding: 8px; }
+            tr:nth-child(even) { background-color: #f9fafb; }
+            
+            .counts-cell { font-family: monospace; font-weight: bold; color: #dc2626; }
+            .action-cell { width: 100px; }
+            
+            .footer { margin-top: 30px; font-size: 10px; display: flex; justify-content: space-between; border-top: 1px dashed #ccc; pt: 10px; }
+            
+            @media print {
+              .no-print { display: none; }
+              body { padding: 0; }
+              table { page-break-inside: auto; }
+              tr { page-break-inside: avoid; page-break-after: auto; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div style="display: flex; align-items: center; gap: 20px;">
+              <img src="assets/ProSolus_logo.png" width="100" height="50" alt="Logo" />
+              <div>
+                <h1>Relatório de Itens para Revisão</h1>
+                <p style="margin: 5px 0 0 0; font-weight: bold; color: #000;">Setor: ${auth.user?.sector || 'Geral'}</p>
+              </div>
+            </div>
+            <div class="info">
+              <p>Gerado em: ${date}</p>
+              <p>Digitador: ${auth.user?.name || 'Sistema'}</p>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th width="80">Ficha</th>
+                <th width="100">Código</th>
+                <th>Descrição</th>
+                <th width="60">Arm.</th>
+                <th width="150">Líder</th>
+                <th width="120">Contagens</th>
+                <th width="120">Conferência (Mão)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
+
+          <div class="footer">
+            <p></p>
+            <p>Página 1 de 1</p>
+          </div>
+          
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
     }
   };
 
@@ -575,6 +677,16 @@ const InventoryList: React.FC = () => {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={isDeleteConfirmOpen}
+        title="Excluir Contagem"
+        message="Tem certeza que deseja excluir esta contagem? Esta ação não pode ser desfeita."
+        onConfirm={confirmDelete}
+        onCancel={() => setIsDeleteConfirmOpen(false)}
+        confirmText="Excluir"
+        variant="danger"
+      />
     </div>
   );
 };
